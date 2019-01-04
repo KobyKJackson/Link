@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Link</string>
+    <string name="profilename">profileName</string>
 </resources>
