@@ -7,24 +7,25 @@
     android:background="@drawable/header">
 
     <de.hdodenhof.circleimageview.CircleImageView
-        android:id="@+id/profile_Image"
+        android:id="@+id/nav_profilePicture_Image"
         android:layout_width="150dp"
         android:layout_height="150dp"
-        android:layout_alignParentStart="true"
+        android:layout_alignParentStart="false"
         android:layout_alignParentTop="true"
-        android:layout_marginStart="80dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="5dp"
         android:src="@drawable/profile"
         app:civ_border_color="@color/colorPrimaryDark"
         app:civ_border_width="2dp" />
 
     <TextView
-        android:id="@+id/profileName_TextView"
-        android:layout_width="150dp"
+        android:id="@+id/nav_fullName_TextView"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
+        android:layout_below="@+id/nav_profilePicture_Image"
+        android:layout_alignParentStart="false"
         android:layout_alignParentBottom="true"
-        android:layout_marginStart="80dp"
-        android:layout_marginBottom="14dp"
+        android:layout_marginTop="5dp"
         android:text="@string/profilename"
         android:textAlignment="center"
         android:textColor="@android:color/background_light"

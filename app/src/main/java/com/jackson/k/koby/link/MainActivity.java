@@ -11,6 +11,7 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -20,6 +21,9 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.squareup.picasso.Picasso;
+
+import de.hdodenhof.circleimageview.CircleImageView;
 
 public class MainActivity extends AppCompatActivity
 {
@@ -29,8 +33,13 @@ public class MainActivity extends AppCompatActivity
     private RecyclerView postList;
     private Toolbar mainToolbar;
 
+    private CircleImageView NavProfilePicture;
+    private TextView NavFullName;
+
     private FirebaseAuth mAuth;
     private DatabaseReference UsersReference;
+
+    String currentUserID;
 
 
     @Override
@@ -40,6 +49,7 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
 
         mAuth = FirebaseAuth.getInstance();
+        currentUserID = mAuth.getCurrentUser().getUid();
         UsersReference = FirebaseDatabase.getInstance().getReference().child("Users");
 
         mainToolbar = findViewById(R.id.main_page_toolbar);
@@ -55,6 +65,40 @@ public class MainActivity extends AppCompatActivity
 
         navigationView = findViewById(R.id.navigation_view);
         View navView = navigationView.inflateHeaderView(R.layout.navigation_header);
+        NavProfilePicture = navView.findViewById(R.id.nav_profilePicture_Image);
+        NavFullName = navView.findViewById(R.id.nav_fullName_TextView);
+
+        UsersReference.child(currentUserID).addValueEventListener(new ValueEventListener()
+        {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot)
+            {
+                if(dataSnapshot.exists())
+                {
+                    if(dataSnapshot.hasChild("fullName"))
+                    {
+                        String fullName =  dataSnapshot.child("fullName").getValue().toString(); //TODO: Add to user class when added
+                        NavFullName.setText(fullName);
+                    }
+
+                    if(dataSnapshot.hasChild("profilePicture"))
+                    {
+                        String image = dataSnapshot.child("profilePicture").getValue().toString(); //TODO: Add to user class when added
+                        Picasso.with(MainActivity.this).load(image).placeholder(R.drawable.profile).into(NavProfilePicture);
+                    }
+                    else
+                    {
+                        Toast.makeText(MainActivity.this, "Profile does not exist...", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError)
+            {
+
+            }
+        });
 
         navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener()
         {
