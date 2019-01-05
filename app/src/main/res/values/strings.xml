@@ -1,4 +1,14 @@
 <resources>
     <string name="app_name">Link</string>
     <string name="profilename">profileName</string>
+    <string name="drawer_open">Drawer Open</string>
+    <string name="drawer_closed">Drawer Closed</string>
+    <string name="app_logo">App Logo</string>
+    <string name="email">Email...</string>
+    <string name="password">Password...</string>
+    <string name="confirm_password">Confirm Password...</string>
+    <string name="create_account">Create Account</string>
+    <string name="log_in">Log In</string>
+    <string name="no_account_need_new">Don\'t have an Account, need New Account?</string>
+    <string name="or_login_with">or Log In with</string>
 </resources>

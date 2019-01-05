@@ -13,14 +13,14 @@
 
         <include
             android:id="@+id/main_page_toolbar"
-            android:layout="@layout/app_bar_layout"
-            >
+            layout="@layout/app_bar_layout">
         </include>
 
         <FrameLayout
             android:id="@+id/mainContainer_FrameLayout"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:layout_below="@+id/main_page_toolbar">
 
             <android.support.v7.widget.RecyclerView
                 android:id="@+id/allUsersPosts_List"
@@ -35,6 +35,7 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:layout_marginBottom="3dp"
-        app:menu="@menu/navigation_menu"></android.support.design.widget.NavigationView>
+        app:menu="@menu/navigation_menu">
+    </android.support.design.widget.NavigationView>
 
 </android.support.v4.widget.DrawerLayout>
