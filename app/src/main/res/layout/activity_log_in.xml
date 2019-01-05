@@ -13,7 +13,7 @@
         android:layout_height="110dp"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="15dp"
         android:contentDescription="@string/app_logo"
         app:srcCompat="@drawable/logo" />
 
@@ -46,7 +46,7 @@
         android:padding="10dp"/>
 
     <Button
-        android:id="@+id/log_in_Button"
+        android:id="@+id/login_Button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@+id/login_password_EditText"
@@ -62,10 +62,10 @@
         android:textStyle="bold" />
 
     <TextView
-        android:id="@+id/register_account_link"
+        android:id="@+id/login_register_account_link"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/log_in_Button"
+        android:layout_below="@+id/login_Button"
         android:layout_marginTop="8dp"
         android:layout_centerHorizontal="true"
         android:text="@string/no_account_need_new"
@@ -78,7 +78,7 @@
         android:id="@+id/login_or_login_with_TextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/register_account_link"
+        android:layout_below="@+id/login_register_account_link"
         android:layout_marginTop="10dp"
         android:layout_centerHorizontal="true"
         android:text="@string/or_login_with"
