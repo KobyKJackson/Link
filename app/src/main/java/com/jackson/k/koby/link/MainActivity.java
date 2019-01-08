@@ -1,5 +1,6 @@
 package com.jackson.k.koby.link;
 
+import android.content.Context;
 import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
@@ -7,13 +8,17 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -32,12 +37,14 @@ public class MainActivity extends AppCompatActivity
     private ActionBarDrawerToggle actionBarDrawerToggle;
     private RecyclerView postList;
     private Toolbar mainToolbar;
+    private ImageButton AddNewPostButton;
 
     private CircleImageView NavProfilePicture;
     private TextView NavFullName;
 
     private FirebaseAuth mAuth;
     private DatabaseReference UsersReference;
+    private DatabaseReference PostsReference;
 
     String currentUserID;
 
@@ -51,6 +58,7 @@ public class MainActivity extends AppCompatActivity
         mAuth = FirebaseAuth.getInstance();
         currentUserID = mAuth.getCurrentUser().getUid();
         UsersReference = FirebaseDatabase.getInstance().getReference().child("Users");
+        PostsReference = FirebaseDatabase.getInstance().getReference().child("Posts");
 
         mainToolbar = findViewById(R.id.main_page_toolbar);
         drawerLayout = findViewById(R.id.drawable_layout);
@@ -62,6 +70,15 @@ public class MainActivity extends AppCompatActivity
         drawerLayout.addDrawerListener(actionBarDrawerToggle);
         actionBarDrawerToggle.syncState();
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+        AddNewPostButton = findViewById(R.id.addNewPost_Button);
+
+        postList = findViewById(R.id.allUsersPosts_List);
+        postList.setHasFixedSize(true);
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+        linearLayoutManager.setReverseLayout(true);
+        linearLayoutManager.setStackFromEnd(true);
+        postList.setLayoutManager(linearLayoutManager);
 
         navigationView = findViewById(R.id.navigation_view);
         View navView = navigationView.inflateHeaderView(R.layout.navigation_header);
@@ -109,6 +126,82 @@ public class MainActivity extends AppCompatActivity
                 return false;
             }
         });
+
+        AddNewPostButton.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View view)
+            {
+                SendUserToPostAcitvity();
+            }
+        });
+
+        DisplayAllUsersPosts();
+    }
+
+    private void DisplayAllUsersPosts()
+    {
+        FirebaseRecyclerAdapter<Posts, PostsViewHolder> firebaseRecyclerAdapter = new FirebaseRecyclerAdapter<Posts, PostsViewHolder>(Posts.class, R.layout.all_posts_layout, PostsViewHolder.class, PostsReference)
+        {
+            @Override
+            protected void populateViewHolder(PostsViewHolder viewHolder, Posts model, int position)
+            {
+                viewHolder.setFullName(model.getFullName());
+                viewHolder.setTime(model.getTime());
+                viewHolder.setDate(model.getDate());
+                viewHolder.setDescription(model.getDescription());
+                viewHolder.setPostImage(getApplicationContext(), model.getPostImage());
+                viewHolder.setProfilePicture(getApplicationContext(), model.getProfilePicture());
+            }
+        };
+        postList.setAdapter(firebaseRecyclerAdapter);
+    }
+
+    public static class PostsViewHolder extends RecyclerView.ViewHolder
+    {
+        View mView;
+
+        public PostsViewHolder(View itemView)
+        {
+            super(itemView);
+            mView = itemView;
+        }
+
+        public void setFullName(String fullName)
+        {
+            TextView userName = mView.findViewById(R.id.post_userName);
+            userName.setText(fullName);
+        }
+
+        public void setProfilePicture(Context ctx, String profilePicture)
+        {
+            CircleImageView profilePic = mView.findViewById(R.id.post_profilePicture);
+            Picasso.with(ctx).load(profilePicture).into(profilePic);
+        }
+
+        public void setTime(String time)
+        {
+            TextView postTime = mView.findViewById(R.id.post_time);
+            postTime.setText(" " + time);
+        }
+
+        public void setDate(String date)
+        {
+            TextView postDate = mView.findViewById(R.id.post_date);
+            postDate.setText("   " + date);
+        }
+
+        public void setDescription(String description)
+        {
+            TextView postDescription = mView.findViewById(R.id.post_description);
+            postDescription.setText(description);
+        }
+
+        public void setPostImage(Context ctx, String postImage)
+        {
+            ImageView postPic = mView.findViewById(R.id.post_image);
+            Picasso.with(ctx).load(postImage).into(postPic);
+        }
     }
 
     @Override
@@ -167,6 +260,14 @@ public class MainActivity extends AppCompatActivity
         finish();
     }
 
+    private void SendUserToPostAcitvity()
+    {
+       Intent addNewPostIntent = new Intent(MainActivity.this, PostActivity.class);
+       startActivity(addNewPostIntent);
+        //Intent cameraIntent = new Intent(MainActivity.this, MyCameraActivity.class);
+        //startActivity(cameraIntent);
+    }
+
     // When button to draw up the navigation or menu is selected it will come out
     @Override
     public boolean onOptionsItemSelected(MenuItem item)
@@ -185,6 +286,7 @@ public class MainActivity extends AppCompatActivity
             case R.id.nav_addNewPost:
             {
                 Toast.makeText(this, "Add New Post", Toast.LENGTH_SHORT).show();
+                SendUserToPostAcitvity();
             }
             break;
 

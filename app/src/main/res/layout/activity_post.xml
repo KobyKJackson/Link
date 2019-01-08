@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".PostActivity"
+    android:background="@drawable/register">
+
+    <include
+        android:id="@+id/newPost_toolbar"
+        layout="@layout/app_bar_layout"/>
+
+    <ImageButton
+        android:id="@+id/addNewPost_Image"
+        android:layout_width="match_parent"
+        android:layout_height="330dp"
+        android:layout_below="@+id/newPost_toolbar"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="20dp"
+        android:padding="15dp"
+        android:scaleType="fitCenter"
+        app:srcCompat="@drawable/select_image" />
+
+    <EditText
+        android:id="@+id/addNewPostDescription_EditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/addNewPost_Image"
+        android:layout_alignParentStart="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginStart="15dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginEnd="15dp"
+        android:background="@drawable/inputs"
+        android:ems="10"
+        android:hint="Description..."
+        android:inputType="textMultiLine"
+        android:padding="15dp"/>
+
+    <Button
+        android:id="@+id/addNewPost_Button"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/addNewPostDescription_EditText"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="25dp"
+        android:background="@drawable/button"
+        android:text="Add New Post"
+        android:textSize="20sp" />
+
+</RelativeLayout>
