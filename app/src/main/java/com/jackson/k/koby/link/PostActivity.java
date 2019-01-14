@@ -3,7 +3,9 @@ package com.jackson.k.koby.link;
 import android.app.ActivityOptions;
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -18,6 +20,7 @@ import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -40,6 +43,7 @@ public class PostActivity extends AppCompatActivity
 {
     private Toolbar mToolbar;
 
+    private FirebaseAnalytics mFirebaseAnalytics;
     private Button AddNewPostButton;
     private ImageButton SelectPostImage;
     private EditText PostDescription;
@@ -63,11 +67,11 @@ public class PostActivity extends AppCompatActivity
         currentUserID = mAuth.getCurrentUser().getUid();
         UserRef = FirebaseDatabase.getInstance().getReference().child("Users").child(currentUserID);
         PostRef = FirebaseDatabase.getInstance().getReference().child("Posts"); //TODO: Check this
+        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
 
         AddNewPostButton = findViewById(R.id.addNewPost_Button);
         SelectPostImage = findViewById(R.id.addNewPost_Image);
         PostDescription = findViewById(R.id.addNewPostDescription_EditText);
-
 
         loadingBar = new ProgressDialog(this);
 
@@ -222,6 +226,12 @@ public class PostActivity extends AppCompatActivity
         galleryIntent.setAction(Intent.ACTION_GET_CONTENT);
         galleryIntent.setType("image/*");
         startActivityForResult(galleryIntent, galleryPic);
+
+//        Intent photoCaptureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+//        if (photoCaptureIntent.resolveActivity(getPackageManager()) != null)
+//        {
+//            startActivityForResult(photoCaptureIntent, galleryPic);
+//        }
     }
 
     @Override
@@ -251,6 +261,12 @@ public class PostActivity extends AppCompatActivity
 
     private void SendUserToMainActivity()
     {
+        Bundle bundle = new Bundle();
+        bundle.putString(FirebaseAnalytics.Param.ITEM_ID, currentUserID);
+        bundle.putString(FirebaseAnalytics.Param.ITEM_NAME, "Post");
+        bundle.putString(FirebaseAnalytics.Param.CONTENT_TYPE, "imagePost");
+        mFirebaseAnalytics.logEvent(FirebaseAnalytics.Event.SELECT_CONTENT, bundle);
+
         Intent mainIntent = new Intent(PostActivity.this, MainActivity.class);
         mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(mainIntent);//, ActivityOptions.makeSceneTransitionAnimation(this).toBundle()); //TODO: Make transitions between activities smoother with animations.

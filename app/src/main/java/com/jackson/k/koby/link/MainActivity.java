@@ -19,14 +19,18 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.squareup.picasso.Picasso;
+
+import java.security.spec.PSSParameterSpec;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -38,6 +42,8 @@ public class MainActivity extends AppCompatActivity
     private RecyclerView postList;
     private Toolbar mainToolbar;
     private ImageButton AddNewPostButton;
+
+    private FirebaseAnalytics mFirebaseAnalytics;
 
     private CircleImageView NavProfilePicture;
     private TextView NavFullName;
@@ -59,6 +65,8 @@ public class MainActivity extends AppCompatActivity
         currentUserID = mAuth.getCurrentUser().getUid();
         UsersReference = FirebaseDatabase.getInstance().getReference().child("Users");
         PostsReference = FirebaseDatabase.getInstance().getReference().child("Posts");
+        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
+        mFirebaseAnalytics.setUserId(currentUserID);
 
         mainToolbar = findViewById(R.id.main_page_toolbar);
         drawerLayout = findViewById(R.id.drawable_layout);
@@ -141,20 +149,36 @@ public class MainActivity extends AppCompatActivity
 
     private void DisplayAllUsersPosts()
     {
+       // Query DBquery = PostsReference.orderByChild("fullName");//.equalTo("give");
+        //DBquery = DBquery.orderByChild("description").equalTo("here");
+        //final Query DBquery = DBquery1 + DBquery2;
         FirebaseRecyclerAdapter<Posts, PostsViewHolder> firebaseRecyclerAdapter = new FirebaseRecyclerAdapter<Posts, PostsViewHolder>(Posts.class, R.layout.all_posts_layout, PostsViewHolder.class, PostsReference)
         {
             @Override
             protected void populateViewHolder(PostsViewHolder viewHolder, Posts model, int position)
             {
+                final String PostKey = getRef(position).getKey();
                 viewHolder.setFullName(model.getFullName());
                 viewHolder.setTime(model.getTime());
                 viewHolder.setDate(model.getDate());
                 viewHolder.setDescription(model.getDescription());
                 viewHolder.setPostImage(getApplicationContext(), model.getPostImage());
                 viewHolder.setProfilePicture(getApplicationContext(), model.getProfilePicture());
+
+                viewHolder.mView.setOnClickListener(new View.OnClickListener()
+                {
+                    @Override
+                    public void onClick(View view)
+                    {
+                        Intent clickPostIntent = new Intent(MainActivity.this, ClickPostActivity.class);
+                        clickPostIntent.putExtra("PostKey", PostKey);
+                        startActivity(clickPostIntent);
+                    }
+                });
             }
         };
         postList.setAdapter(firebaseRecyclerAdapter);
+        firebaseRecyclerAdapter.notifyDataSetChanged();
     }
 
     public static class PostsViewHolder extends RecyclerView.ViewHolder
@@ -264,8 +288,6 @@ public class MainActivity extends AppCompatActivity
     {
        Intent addNewPostIntent = new Intent(MainActivity.this, PostActivity.class);
        startActivity(addNewPostIntent);
-        //Intent cameraIntent = new Intent(MainActivity.this, MyCameraActivity.class);
-        //startActivity(cameraIntent);
     }
 
     // When button to draw up the navigation or menu is selected it will come out
