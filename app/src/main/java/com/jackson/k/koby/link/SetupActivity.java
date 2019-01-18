@@ -136,8 +136,8 @@ public class SetupActivity extends AppCompatActivity
             {
                 loadingBar.setTitle("Saving Profile Picture");
                 loadingBar.setMessage("Please wait, saving your profile picture...");
-                loadingBar.show();
                 loadingBar.setCanceledOnTouchOutside(true);
+                loadingBar.show();
 
                 Uri resultUri = result.getUri();
 

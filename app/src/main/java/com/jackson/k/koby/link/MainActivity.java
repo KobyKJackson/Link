@@ -290,6 +290,12 @@ public class MainActivity extends AppCompatActivity
        startActivity(addNewPostIntent);
     }
 
+    private void SendUserToSettingsActivity()
+    {
+        Intent settingsIntent = new Intent(MainActivity.this, SettingsActivity.class);
+        startActivity(settingsIntent);
+    }
+
     // When button to draw up the navigation or menu is selected it will come out
     @Override
     public boolean onOptionsItemSelected(MenuItem item)
@@ -345,6 +351,7 @@ public class MainActivity extends AppCompatActivity
             case R.id.nav_settings:
             {
                 Toast.makeText(this, "Settings", Toast.LENGTH_SHORT).show();
+                SendUserToSettingsActivity();
             }
             break;
 
