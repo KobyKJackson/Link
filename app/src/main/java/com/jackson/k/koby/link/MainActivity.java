@@ -296,6 +296,12 @@ public class MainActivity extends AppCompatActivity
         startActivity(settingsIntent);
     }
 
+    private void SendUserToProfileActivity()
+    {
+        Intent profileIntent = new Intent(MainActivity.this, ProfileActivity.class);
+        startActivity(profileIntent);
+    }
+
     // When button to draw up the navigation or menu is selected it will come out
     @Override
     public boolean onOptionsItemSelected(MenuItem item)
@@ -321,6 +327,7 @@ public class MainActivity extends AppCompatActivity
             case R.id.nav_profile:
             {
                 Toast.makeText(this, "Profile", Toast.LENGTH_SHORT).show();
+                SendUserToProfileActivity();
             }
             break;
 
