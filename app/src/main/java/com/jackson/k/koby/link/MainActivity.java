@@ -49,10 +49,11 @@ public class MainActivity extends AppCompatActivity
     private TextView NavFullName;
 
     private FirebaseAuth mAuth;
-    private DatabaseReference UsersReference;
-    private DatabaseReference PostsReference;
+    private DatabaseReference UsersReference, PostsReference, LikesReference;
 
     String currentUserID;
+
+    Boolean likeCheck = false;
 
 
     @Override
@@ -65,6 +66,8 @@ public class MainActivity extends AppCompatActivity
         currentUserID = mAuth.getCurrentUser().getUid();
         UsersReference = FirebaseDatabase.getInstance().getReference().child("Users");
         PostsReference = FirebaseDatabase.getInstance().getReference().child("Posts");
+        LikesReference = FirebaseDatabase.getInstance().getReference().child("Likes");
+
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
         mFirebaseAnalytics.setUserId(currentUserID);
 
@@ -165,6 +168,8 @@ public class MainActivity extends AppCompatActivity
                 viewHolder.setPostImage(getApplicationContext(), model.getPostImage());
                 viewHolder.setProfilePicture(getApplicationContext(), model.getProfilePicture());
 
+                viewHolder.setLikeButtonStatus(PostKey);
+
                 viewHolder.mView.setOnClickListener(new View.OnClickListener()
                 {
                     @Override
@@ -175,7 +180,44 @@ public class MainActivity extends AppCompatActivity
                         startActivity(clickPostIntent);
                     }
                 });
+
+                viewHolder.likeButton.setOnClickListener(new View.OnClickListener()
+                {
+                    @Override
+                    public void onClick(View v)
+                    {
+                        likeCheck = true;
+
+                        LikesReference.addValueEventListener(new ValueEventListener()
+                        {
+                            @Override
+                            public void onDataChange(DataSnapshot dataSnapshot)
+                            {
+                                if (likeCheck.equals(true))
+                                {
+                                    if (dataSnapshot.child(PostKey).hasChild(currentUserID))
+                                    {
+                                        LikesReference.child(PostKey).child(currentUserID).removeValue();
+                                        likeCheck = false;
+                                    }
+                                    else
+                                        {
+                                        LikesReference.child(PostKey).child(currentUserID).setValue(true);
+                                        likeCheck = false;
+                                    }
+                                }
+                            }
+
+                            @Override
+                            public void onCancelled(DatabaseError databaseError)
+                            {
+
+                            }
+                        });
+                    }
+                });
             }
+
         };
         postList.setAdapter(firebaseRecyclerAdapter);
         firebaseRecyclerAdapter.notifyDataSetChanged();
@@ -185,10 +227,53 @@ public class MainActivity extends AppCompatActivity
     {
         View mView;
 
+        ImageButton likeButton, commentButton;
+        TextView displayNumOfLikes;
+        int countLikes;
+        String currentUserID;
+        DatabaseReference likesRef;
+
         public PostsViewHolder(View itemView)
         {
             super(itemView);
             mView = itemView;
+
+            likeButton = mView.findViewById(R.id.likeButton);
+            commentButton = mView.findViewById(R.id.commentButton);
+            displayNumOfLikes = mView.findViewById(R.id.displayNumOfLikes);
+
+            likesRef = FirebaseDatabase.getInstance().getReference().child("Likes");
+            currentUserID = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        }
+
+        public void setLikeButtonStatus(final String postKey)
+        {
+            likesRef.addValueEventListener(new ValueEventListener()
+            {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot)
+                {
+                    if (dataSnapshot.child(postKey).hasChild(currentUserID))
+                    {
+                        countLikes = (int) dataSnapshot.child(postKey).getChildrenCount();
+                        likeButton.setImageResource((R.drawable.like));
+                        displayNumOfLikes.setText(Integer.toString(countLikes) + " Likes");
+                    }
+                    else
+                    {
+                        countLikes = (int) dataSnapshot.child(postKey).getChildrenCount();
+                        likeButton.setImageResource((R.drawable.dislike));
+                        displayNumOfLikes.setText(Integer.toString(countLikes) + " Likes");
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError)
+                {
+
+                }
+            });
         }
 
         public void setFullName(String fullName)
@@ -296,6 +381,12 @@ public class MainActivity extends AppCompatActivity
         startActivity(settingsIntent);
     }
 
+    private void SendUserToFindFriendsActivity()
+    {
+        Intent findFriendsIntent = new Intent(MainActivity.this, FindFirendsActivity.class);
+        startActivity(findFriendsIntent);
+    }
+
     private void SendUserToProfileActivity()
     {
         Intent profileIntent = new Intent(MainActivity.this, ProfileActivity.class);
@@ -346,6 +437,7 @@ public class MainActivity extends AppCompatActivity
             case R.id.nav_findFriends:
             {
                 Toast.makeText(this, "Find Friends", Toast.LENGTH_SHORT).show();
+                SendUserToFindFriendsActivity();
             }
             break;
 
