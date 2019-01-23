@@ -1,9 +1,17 @@
 package com.jackson.k.koby.link;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
+import android.support.v4.content.res.ResourcesCompat;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
@@ -11,6 +19,7 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
@@ -19,6 +28,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -28,9 +39,27 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
+import com.spotify.android.appremote.api.ConnectionParams;
+import com.spotify.android.appremote.api.Connector;
+import com.spotify.android.appremote.api.SpotifyAppRemote;
+import com.spotify.protocol.client.ErrorCallback;
+import com.spotify.protocol.client.Subscription;
+import com.spotify.protocol.types.Capabilities;
+import com.spotify.protocol.types.Image;
+import com.spotify.protocol.types.PlayerContext;
+import com.spotify.protocol.types.PlayerState;
+import com.spotify.protocol.types.Repeat;
 import com.squareup.picasso.Picasso;
 
 import java.security.spec.PSSParameterSpec;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Locale;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -55,6 +84,50 @@ public class MainActivity extends AppCompatActivity
 
     Boolean likeCheck = false;
 
+    //Song Stuff
+    private DatabaseReference SongsReference, UserRef;
+    private RecyclerView currentSongList;
+    private static final String CLIENT_ID = "6abd2ef14ec3429abae5c4376d6244bd";
+    private static final String REDIRECT_URI = "com.jackson.k.koby.link://callback";
+
+    private StorageReference CurrentSongsImagesReference;
+
+    private String DownloadURL;
+
+    private static SpotifyAppRemote mSpotifyAppRemote;
+
+    Subscription<PlayerState> mPlayerStateSubscription;
+    Subscription<PlayerContext> mPlayerContextSubscription;
+
+    private static final String TAG = MainActivity.class.getSimpleName();
+    private final ErrorCallback mErrorCallback = throwable -> logError(throwable, "Boom!");
+
+    private final Subscription.EventCallback<PlayerContext> mPlayerContextEventCallback = new Subscription.EventCallback<PlayerContext>() {
+        @Override
+        public void onEvent(PlayerContext playerContext) {
+            //       mPlayerContextButton.setText(String.format(Locale.US, "%s\n%s", playerContext.title, playerContext.subtitle));
+            //       mPlayerContextButton.setTag(playerContext);
+        }
+    };
+
+    @SuppressLint("SetTextI18n")
+    private final Subscription.EventCallback<PlayerState> mPlayerStateEventCallback = new Subscription.EventCallback<PlayerState>()
+    {
+        @Override
+        public void onEvent(PlayerState playerState)
+        {
+            // Get image from track
+            mSpotifyAppRemote.getImagesApi()
+                    .getImage(playerState.track.imageUri, Image.Dimension.LARGE)
+                    .setResultCallback(bitmap -> {
+                        //mCoverArtImageView.setImageBitmap(bitmap);
+                        //mImageLabel.setText(String.format(Locale.ENGLISH, "%d x %d", bitmap.getWidth(), bitmap.getHeight()));
+
+                        UpdateCurrentSong(playerState.track.name, playerState.track.artist.name);//, (Uri)playerState.track.imageUri);
+                    });
+        }
+    };
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -67,6 +140,9 @@ public class MainActivity extends AppCompatActivity
         UsersReference = FirebaseDatabase.getInstance().getReference().child("Users");
         PostsReference = FirebaseDatabase.getInstance().getReference().child("Posts");
         LikesReference = FirebaseDatabase.getInstance().getReference().child("Likes");
+
+        SongsReference = FirebaseDatabase.getInstance().getReference().child("Songs");
+        UserRef = FirebaseDatabase.getInstance().getReference().child("Users").child(currentUserID);
 
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
         mFirebaseAnalytics.setUserId(currentUserID);
@@ -90,6 +166,17 @@ public class MainActivity extends AppCompatActivity
         linearLayoutManager.setReverseLayout(true);
         linearLayoutManager.setStackFromEnd(true);
         postList.setLayoutManager(linearLayoutManager);
+
+
+        //Song Stuff
+        currentSongList = findViewById(R.id.allUsersSongs_List);
+        currentSongList.setHasFixedSize(true);
+        LinearLayoutManager currentSongLinearLayoutManager = new LinearLayoutManager(this);
+        linearLayoutManager.setReverseLayout(true);
+        linearLayoutManager.setStackFromEnd(true);
+        currentSongList.setLayoutManager(currentSongLinearLayoutManager);
+        CurrentSongsImagesReference = FirebaseStorage.getInstance().getReference();
+
 
         navigationView = findViewById(R.id.navigation_view);
         View navView = navigationView.inflateHeaderView(R.layout.navigation_header);
@@ -148,6 +235,7 @@ public class MainActivity extends AppCompatActivity
         });
 
         DisplayAllUsersPosts();
+        DisplayAllUsersSongs();
     }
 
     private void DisplayAllUsersPosts()
@@ -351,6 +439,8 @@ public class MainActivity extends AppCompatActivity
 
             }
         });
+
+        connect();
     }
 
     private void SendUserToSetupActivity()
@@ -463,4 +553,268 @@ public class MainActivity extends AppCompatActivity
             break;
         }
     }
+
+
+
+
+
+
+
+
+    private void DisplayAllUsersSongs()
+    {
+        FirebaseRecyclerAdapter<CurrentSongs, CurrentSongsViewHolder> firebaseRecyclerAdapter = new FirebaseRecyclerAdapter<CurrentSongs, CurrentSongsViewHolder>(CurrentSongs.class, R.layout.all_current_song_layout, CurrentSongsViewHolder.class, SongsReference) {
+            @Override
+            protected void populateViewHolder(CurrentSongsViewHolder viewHolder, CurrentSongs model, int position)
+            {
+                final String PostKey = getRef(position).getKey();
+                viewHolder.setFullName(model.getFullName());
+                viewHolder.setTime(model.getTime());
+                viewHolder.setDate(model.getDate());
+                viewHolder.setTitle(model.getTitle());
+                viewHolder.setPostImage(getApplicationContext(), model.getPostImage());
+                viewHolder.setProfilePicture(getApplicationContext(), model.getProfilePicture());
+
+                viewHolder.mView.setOnClickListener(new View.OnClickListener()
+                {
+                    @Override
+                    public void onClick(View view)
+                    {
+                        Intent clickPostIntent = new Intent(MainActivity.this, ClickPostActivity.class);
+                        clickPostIntent.putExtra("PostKey", PostKey);
+                        startActivity(clickPostIntent);
+                    }
+                });
+            }
+
+        };
+        currentSongList.setAdapter(firebaseRecyclerAdapter);
+        firebaseRecyclerAdapter.notifyDataSetChanged();
+    }
+
+
+    public static class CurrentSongsViewHolder extends RecyclerView.ViewHolder
+    {
+        View mView;
+
+        String currentUserID;
+
+        public CurrentSongsViewHolder(View itemView)
+        {
+            super(itemView);
+            mView = itemView;
+            currentUserID = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+
+        public void setFullName(String fullName)
+        {
+            TextView userName = mView.findViewById(R.id.currentSong_userName);
+            userName.setText(fullName);
+        }
+
+        public void setProfilePicture(Context ctx, String profilePicture)
+        {
+            CircleImageView profilePic = mView.findViewById(R.id.currentSong_profilePicture);
+            Picasso.with(ctx).load(profilePicture).into(profilePic);
+        }
+
+        public void setTime(String time)
+        {
+            TextView postTime = mView.findViewById(R.id.currentSong_time);
+            postTime.setText(" " + time);
+        }
+
+        public void setDate(String date)
+        {
+            TextView postDate = mView.findViewById(R.id.currentSong_date);
+            postDate.setText("   " + date);
+        }
+
+        public void setTitle(String title)
+        {
+            TextView songTitle = mView.findViewById(R.id.currentSong_title);
+            songTitle.setText(title);
+        }
+
+        public void setPostImage(Context ctx, String postImage)
+        {
+            ImageView postPic = mView.findViewById(R.id.currentSong_image);
+            Picasso.with(ctx).load(postImage).into(postPic);
+        }
+    }
+
+
+    private void logError(Throwable throwable, String msg) {
+        Toast.makeText(this, "Error: " + msg, Toast.LENGTH_SHORT).show();
+        Log.e(TAG, msg, throwable);
+    }
+
+    private void logMessage(String msg) {
+        logMessage(msg, Toast.LENGTH_SHORT);
+    }
+
+    private void logMessage(String msg, int duration) {
+        Toast.makeText(this, msg, duration).show();
+        Log.d(TAG, msg);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        SpotifyAppRemote.disconnect(mSpotifyAppRemote);
+    }
+
+    private void connect() {
+
+     //   SpotifyAppRemote.disconnect(mSpotifyAppRemote);
+
+        SpotifyAppRemote.connect(
+               this,
+                new ConnectionParams.Builder(CLIENT_ID)
+                        .setRedirectUri(REDIRECT_URI)
+                        .showAuthView(true)
+                        .build(),
+                new Connector.ConnectionListener()
+                {
+                    @Override
+                    public void onConnected(SpotifyAppRemote spotifyAppRemote)
+                    {
+                        mSpotifyAppRemote = spotifyAppRemote;
+                            if (mPlayerContextSubscription != null && !mPlayerContextSubscription.isCanceled())
+                            {
+                                mPlayerContextSubscription.cancel();
+                                mPlayerContextSubscription = null;
+                            }
+
+
+                            mPlayerContextSubscription = (Subscription<PlayerContext>) mSpotifyAppRemote.getPlayerApi()
+                                    .subscribeToPlayerContext()
+                                    .setEventCallback(mPlayerContextEventCallback)
+                                    .setErrorCallback(throwable -> {
+                                        logError(throwable, "Subscribed to PlayerContext failed!");
+                                    });
+
+                            if (mPlayerStateSubscription != null && !mPlayerStateSubscription.isCanceled()) {
+                                mPlayerStateSubscription.cancel();
+                                mPlayerStateSubscription = null;
+                            }
+
+                            mPlayerStateSubscription = (Subscription<PlayerState>) mSpotifyAppRemote.getPlayerApi()
+                                    .subscribeToPlayerState()
+                                    .setEventCallback(mPlayerStateEventCallback)
+                                    .setLifecycleCallback(new Subscription.LifecycleCallback() {
+                                        @Override
+                                        public void onStart() {
+                                            logMessage("Event: start");
+                                        }
+
+                                        @Override
+                                        public void onStop() {
+                                            logMessage("Event: end");
+                                        }
+                                    })
+                                    .setErrorCallback(throwable -> {
+                                        logError(throwable, "Subscribed to PlayerContext failed!");
+                                    });
+                        }
+
+                    @Override
+                    public void onFailure(Throwable error)
+                    {
+                        logMessage(String.format("Connection failed: %s", error));
+                    }
+                });
+    }
+
+    private void playUri(String uri) {
+        mSpotifyAppRemote.getPlayerApi()
+                .play(uri)
+                .setResultCallback(empty -> logMessage("Play successful"))
+                .setErrorCallback(mErrorCallback);
+    }
+
+
+
+    private void UpdateCurrentSong(String track, String artist)//, Uri imageURI)
+    {
+        //StoreImageToDatabase(imageURI);
+
+        UserRef.addValueEventListener(new ValueEventListener()
+        {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot)
+            {
+                if(dataSnapshot.exists())
+                {
+                    String fullName = dataSnapshot.child("fullName").getValue().toString();
+                    String profilePicture = dataSnapshot.child("profilePicture").getValue().toString();
+
+                    Calendar calFordDate = Calendar.getInstance();
+                    SimpleDateFormat currentDate = new SimpleDateFormat("dd-MMMM-yyyy");
+                    String saveCurrentDate = currentDate.format(calFordDate.getTime());
+
+                    Calendar calFordTime = Calendar.getInstance();
+                    SimpleDateFormat currentTime = new SimpleDateFormat("HH:mm");
+                    String saveCurrentTime = currentTime.format(calFordDate.getTime());
+
+                    HashMap postMap = new HashMap(); //TODO: create a class for this;
+                    postMap.put("uid", currentUserID);
+                    postMap.put("date", saveCurrentDate);
+                    postMap.put("time", saveCurrentTime);
+                    postMap.put("title", track + " by " + artist);
+                    postMap.put("postImage", DownloadURL);
+                    postMap.put("profilePicture", profilePicture);
+                    postMap.put("fullName", fullName);
+
+                    SongsReference.child(currentUserID+"CurrentSong").updateChildren(postMap).addOnCompleteListener(new OnCompleteListener() {
+                        @Override
+                        public void onComplete(@NonNull Task task)
+                        {
+                            if (task.isSuccessful())
+                            {
+                                Toast.makeText(MainActivity.this, "New Post uploaded to Database", Toast.LENGTH_SHORT).show();
+                            }
+                            else
+                            {
+                                String message = task.getException().getMessage();
+                                Toast.makeText(MainActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError)
+            {
+
+            }
+        });
+    }
+
+    private void StoreImageToDatabase(Uri imageURI)
+    {
+        String timeStamp = new SimpleDateFormat("_dd-MM-yyyy_HHmmss").format(new Date());
+
+        StorageReference filePath = CurrentSongsImagesReference.child("Current Song Images").child("currentSong" +currentUserID + ".jpg"); //TODO:Maybe re-structure the pictures base off users or add more of a random value so two aren't the same
+
+        filePath.putFile((android.net.Uri)imageURI).addOnCompleteListener(new OnCompleteListener<UploadTask.TaskSnapshot>()
+        {
+            @Override
+            public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task)
+            {
+                if (task.isSuccessful())
+                {
+                    DownloadURL = task.getResult().getDownloadUrl().toString();
+                    Toast.makeText(MainActivity.this, "Image uploaded to Database", Toast.LENGTH_SHORT).show();
+                }
+                else
+                {
+                    String message = task.getException().getMessage();
+                    Toast.makeText(MainActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
 }
